@@ -611,6 +611,83 @@ class ProductSerializer(serializers.ModelSerializer):
 router.register('product', ProductView)
 ```
 
+```python
+class FirmView(viewsets.ModelViewSet):
+    queryset = Firm.objects.all()
+    serializer_class = FirmSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+```
+
+```python
+class FirmSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Firm
+        fields = (
+            "id",
+            "name",
+            "phone",
+            "address"
+        )
+```
+
+```python
+router.register('firm', FirmView)
+```
+
+```python
+class TransactionView(viewsets.ModelViewSet):
+    queryset = Transaction.objects.all()
+    serializer_class = TransactionSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['firm', 'transaction', 'product']
+    search_fields = ['firm']
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+```
+
+```python
+class TransactionSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    firm = serializers.StringRelatedField()
+    firm_id = serializers.IntegerField()
+    product = serializers.StringRelatedField()
+    product_id = serializers.IntegerField()
+
+    class Meta:
+        model = Transaction
+        fields = (
+            "id",
+            "user",
+            "firm",
+            "firm_id",
+            "transaction",
+            "product",
+            "product_id",
+            "quantity",
+            "price",
+            "price_total",
+        )
+
+        read_only_fields = ('price_total',)
+
+    def validate(self, data):
+        if data.get('transaction') == 0:
+            product = Product.objects.get(id=data.get('product_id'))
+            if data.get('quantity') > product.stock:
+                raise serializers.ValidationError(
+                    f'Not enough stock! Current stock is {product.stock}'
+                )
+        return data
+```
+
+```python
+router.register('transaction', TransactionView)
+```
+
 
 
 
