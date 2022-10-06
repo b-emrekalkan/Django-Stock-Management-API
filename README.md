@@ -107,67 +107,6 @@ pip freeze > requirements.txt
 
 ✔ Go to settings.py and add '' app to INSTALLED_APPS
 
-## 💻 Install Swagger
-
-🔹 Explain a [sample API reference documentation](https://shopify.dev/api)
-
-🔹 Swagger is an open source project launched by a startup in 2010. The goal is to implement a framework that will allow developers to document and design APIs, while maintaining synchronization with the code.
-
-🔹 Developing an API requires orderly and understandable documentation.
-
-🔹 To document and design APIs with Django rest framework we will use drf-yasg which generate real Swagger/Open-API 2.0 specifications from a Django Rest Framework API.
-
-📜 You can find the documentation [here](https://drf-yasg.readthedocs.io/en/stable/readme.html).
-
-### 💻 Go to terminal for installation 👇
-
-```bash
-pip install drf-yasg
-```
-
-💻 Go to terminal to update requirements.txt  👇
-
-```bash
-pip freeze > requirements.txt
-```
-
-✔ Go to "settings.py" and add 'drf_yasg' app to INSTALLED_APPS
-
-## ✔ Here is the updated "urls.py" file for swagger. In swagger documentation, those patterns are not up-to-date 👇
-
-```python
-from django.contrib import admin
-from django.urls import path
-# Three modules for swagger:
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Flight Reservation API",
-        default_version="v1",
-        description="Flight Reservation API project provides flight and reservation info",
-        terms_of_service="#",
-        contact=openapi.Contact(
-            email="rafe@clarusway.com"),  # Change e-mail on this line!
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    # Url paths for swagger:
-    path("swagger(<format>\.json|\.yaml)",
-         schema_view.without_ui(cache_timeout=0), name="schema-json"),
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0),
-         name="schema-swagger-ui"),
-    path("redoc/", schema_view.with_ui("redoc",
-         cache_timeout=0), name="schemaredoc"),
-]
-```
-
 ## 💻 MIGRATE 👇
 
 ```bash
@@ -178,56 +117,6 @@ python manage.py migrate
 
 ```bash
 python manage.py runserver
-```
-
-### ✔ After running the server, go to [swagger page](http://127.0.0.1:8000/swagger/) and [redoc page](http://localhost:8000/redoc/) of your project!
-
-## 💻 INSTALL DEBUG TOOLBAR 👇
-
-🔹 The Django Debug Toolbar is a configurable set of panels that display various debug information about the current request/response and when clicked, display more details about the panel’s content.
-
-📜 See the Django Debug Toolbar [documentation page](https://django-debug-toolbar.readthedocs.io/en/latest/).
-
-💻 For Installation go to terminal 👇
-
-```bash
-pip install django-debug-toolbar
-```
-
-💻 Go to terminal to update "requirements.txt"  👇
-
-```bash
-pip freeze > requirements.txt
-```
-
-✔ Go to "settings.py" and add 'debug_toolbar' app to INSTALLED_APPS
-
-
-## 🚩 Add django-debug-toolbar’s URLs to your project’s URLconf 👇
-
-```python
-from django.urls import include
-urlpatterns = [
-# ...
-path('__debug__/', include('debug_toolbar.urls')),
-]
-```
-
-## 🚩 Add the middleware to the top 👇
-
-```python
-MIDDLEWARE = [
-"debug_toolbar.middleware.DebugToolbarMiddleware",
-# ...
-]
-```
-
-## 🚩 Add configuration of internal IPs to "settings.py" 👇
-
-```python
-INTERNAL_IPS = [
-    "127.0.0.1",
-]
 ```
 
 # <center> ✏ This is the end of initial setup ✏ </center>
@@ -258,13 +147,196 @@ pip install dj-rest-auth
 pip freeze > requirements.txt
 ```
 
-## 🚩 Add "dj_rest_auth" app to "INSTALLED_APPS" in your django "base.py" 👇
+## 🚩 Add "dj_rest_auth" app to "INSTALLED_APPS" in your django "settings.py" 👇
 
 ```python
     'rest_framework',
     'rest_framework.authtoken',
     'dj_rest_auth',
 ```
+
+## 🚩 Go to "main/urls.py" and add the path 👇
+
+```python
+path('users/', include('users.urls'))
+```
+
+## ✔ Create "urls.py" file under "users" App 👇
+## 🚩 Go to "users/urls.py" and add 👇
+```python
+from django.urls import path, include
+
+urlpatterns = [
+    path('auth/', include('dj_rest_auth.urls')),
+]
+```
+
+## 💻 Migrate your database
+```bash
+python manage.py migrate
+```
+
+## ✔ Create "serializers.py" file under "users" App and add 👇
+```python
+from rest_framework import serializers, validators
+# from django.contrib.auth.models import User
+# from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from dj_rest_auth.serializers import TokenSerializer
+
+User = get_user_model()
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[validators.UniqueValidator(queryset=User.objects.all())]
+    )
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password],
+        style={"input_type": "password"}
+
+    )
+
+    password1 = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password],
+        style={"input_type": "password"}
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'password',
+            'password1'
+        )
+
+    def validate(self, data):
+        if data['password'] != data['password1']:
+            raise serializers.ValidationError(
+                {"password": "Password didn't match..... "}
+            )
+        return data
+
+    #! To create a user when the user is registered 👇
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        validated_data.pop('password1')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+```
+## 🚩 Go to "views.py"
+```python
+from operator import ge
+from rest_framework import generics
+from django.contrib.auth.models import User
+from .serializers import RegisterSerializer
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+```
+
+## 🚩 Go to "urls.py" and add the path 👇
+```python
+path('register/', RegisterView.as_view()),
+```
+
+## 🚩 Go to "base.py" and add 👇
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
+```
+
+## 🚩 Create "signals.py" under "user" App and add 👇
+```python
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
+
+@receiver(post_save, sender=User)
+def create_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
+```
+
+## 🚩 Go to "apps.py" and add this under UsersConfig() 👇
+```python
+def ready(self) -> None:
+    import users.signals
+```
+
+## 🚩 Go to "views.py" and customize RegisterView()👇
+```python
+from rest_framework import generics, status
+from django.contrib.auth.models import User
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from .serializers import RegisterSerializer
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+
+    #! When user register 👉 "username", "email","first_name","last_name" and "token" will be returned. 👇
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        data = serializer.data
+        if Token.objects.filter(user=user).exists():
+            token = Token.objects.get(user=user)
+            data['token'] = token.key
+        else:
+            data['error'] = 'User does not have token. Please login'
+        headers = self.get_success_headers(serializer.data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+```
+
+## 🚩 Override TokenSerializer() 👇
+```python
+from dj_rest_auth.serializers import TokenSerializer
+
+#! We need to override the TokenSerializer to return all user data in a single request.
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = {
+            'username',
+            'email'
+        }
+
+class CustomTokenSerializer(TokenSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta(TokenSerializer.Meta):
+        fields = {
+            'key',
+            'user'
+        }
+```
+
+## 🚩 Go to "base.py" and add 👇
+```python
+REST_AUTH_SERIALIZERS = {
+    'TOKEN_SERIALIZER': 'users.serializers.CustomTokenSerializer',
+}
+```
+## <center> ****************************************************** </center>
 
 ## 🚩 ADDING APP
 
@@ -275,6 +347,12 @@ python manage.py startapp stock
 ```
 
 ✔ Go to "settings.py" and add 'stock' app to "INSTALLED_APPS"
+
+## 🚩 Go to "main.urls.py" and add path 👇
+
+```python
+ path('stock/', include('stock.urls')),
+```
 
 ## 🚩 Go to "model.py" under "stock" app and create models 👇
 
@@ -404,7 +482,7 @@ def update_stock(sender, instance, **kwargs):
 ## 🚩 Go to "views.py" and start to write views 👇
 
 ```python
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
 from .models import (
     Category,
     Brand,
@@ -416,6 +494,8 @@ from .models import (
 class CategoryView(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = ''
+    filter_fields = [filters.SearchFilter]
+    search_fields = ['name']
 ```
 
 ## 🚩 Create "serializers.py" under "stock" app 👇
@@ -430,7 +510,7 @@ from .models import (
     Transaction
 )
 
-class CategorySerializers(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = (
@@ -467,6 +547,72 @@ urlpatterns = [
 
 ] + router.urls
 ```
+
+## 🚩 Go to views.py and create BrandView 👇
+
+```python
+class BrandView(viewsets.ModelViewSet):
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+```
+
+```python
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = (
+            "id",
+            "name"
+        )
+```
+
+```python
+router.register('Brand', BrandView)
+```
+
+```python
+from django_filters.rest_framework import DjangoFilterBackend
+
+class ProductView(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['category', 'brand']
+    search_fields = ['name']
+```
+
+## ✔ Add 'django_filters' to the INSTALLED_APP in "settings.py" 👇
+
+```python
+class ProductSerializer(serializers.ModelSerializer):
+    category = serializers.StringRelatedField()
+    category_id = serializers.IntegerField(write_only=True)
+    brand = serializers.StringRelatedField()
+    brand_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Product
+        fields = (
+            "id",
+            "name",
+            "category",
+            "category_id",
+            "brand",
+            "brand_id",
+            "stock"
+        )
+
+        read_only_fields = ('stock',)
+```
+
+```python
+router.register('product', ProductView)
+```
+
+
+
 
 
 

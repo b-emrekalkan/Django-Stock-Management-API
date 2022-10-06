@@ -1,12 +1,16 @@
 from django import urls
 from django.urls import path
 from .views import(
-    CategoryView
+    CategoryView,
+    BrandView,
+    ProductView
 )
 from rest_framework import routers
 
 router = routers.DefaultRouter()
-router.register('Category', CategoryView)
+router.register('category', CategoryView)
+router.register('brand', BrandView)
+router.register('product', ProductView)
 
 urlpatterns = [
 

@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import (
     Category,
     Brand,
@@ -8,9 +9,25 @@ from .models import (
 )
 
 from .serializers import(
-    CategorySerializers,
+    CategorySerializer,
+    BrandSerializer,
+    ProductSerializer
 )
 class CategoryView(viewsets.ModelViewSet):
     queryset = Category.objects.all()
-    serializer_class = CategorySerializers
+    serializer_class = CategorySerializer
+    filter_fields = [filters.SearchFilter]
+    search_fields = ['name']
 
+class BrandView(viewsets.ModelViewSet):
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+
+class ProductView(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['category', 'brand']
+    search_fields = ['name']
