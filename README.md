@@ -266,6 +266,22 @@ pip freeze > requirements.txt
     'dj_rest_auth',
 ```
 
+## 🚩 ADDING APP
+
+💻 Go to terminal 👇
+
+```bash
+python manage.py startapp stock
+```
+
+✔ Go to "settings.py" and add 'stock' app to "INSTALLED_APPS"
+
+## 🚩 Model.py under "stock" app 👇
+
+```python
+
+```
+
 ## 🚩 Go to "main/urls.py" and add the path 👇
 
 ```python
