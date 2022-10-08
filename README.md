@@ -749,7 +749,7 @@ class CategoryProductsSerializer(serializers.ModelSerializer):
         )
 ```
 
-## 🚩 After that customize the CategoryView() 👇
+## 🚩 Then customize the CategoryView() 👇
 
 ```python
 class CategoryView(viewsets.ModelViewSet):
@@ -766,6 +766,73 @@ class CategoryView(viewsets.ModelViewSet):
             return super().get_serializer_class
 ```
 
+# 🚩 <center>ADDING PERMISSIONS </center>
+
+## 🚩 Go to "stock.views.py ", import DjangoModelPermissions and customize all views by adding 👇
+
+```python
+from rest_framework.permissions import DjangoModelPermissions
+
+    permission_classes = [DjangoModelPermissions]
+```
+
+## 🚩 Go to "settings.py" and add 👇
+
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
+```
+
+## 🚩 To show groups of users in admin panel; go to account/admin.py and add 👇
+
+```python
+from django.contrib.auth.admin import UserAdmin
+from django.contrib import admin
+from django.contrib.auth.models import User
+
+class UserAdminWithGroup(UserAdmin):
+    def group_name(self, obj):
+        queryset = obj.groups.values_list('name', flat=True)
+        groups = []
+        for group in queryset:
+            groups.append(group)
+
+        return ' '.join(groups)
+
+    list_display = UserAdmin.list_display + ('group_name',)
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdminWithGroup)
+```
+
+## 🚩 Create "permissions.py" file under "stock" app 👇
+
+```python
+from rest_framework.permissions import DjangoModelPermissions
+
+class CustomModelPermissions(DjangoModelPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+```
+
+## 🚩 Since we wrote Custom Permissions, we need to update the permissions in the views. So import the CustomPermissionModel() in "views.py" 👇
+
+```python
+from .permissions import CustomModelPermission
+
+    permission_classes = [CustomModelPermission]
+```
 
 ## 📢 Do not forget to check the endpoints you wrote in [Postman](https://www.postman.com/).
 
