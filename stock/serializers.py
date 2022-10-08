@@ -26,6 +26,8 @@ class BrandSerializer(serializers.ModelSerializer):
         )
 
 class ProductSerializer(serializers.ModelSerializer):
+    #! We use "stringRelated" to get the string equivalent of those connected with foreign key 👇
+
     category = serializers.StringRelatedField()
     category_id = serializers.IntegerField(write_only=True)
     brand = serializers.StringRelatedField()
@@ -80,6 +82,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         read_only_fields = ('price_total',)
 
     def validate(self, data):
+        #! data, actually all of the above fields 👆
         if data.get('transaction') == 0:
             product = Product.objects.get(id=data.get('product_id'))
             if data.get('quantity') > product.stock:

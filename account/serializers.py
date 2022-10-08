@@ -57,7 +57,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 {"password": "Password fields didn't match."})
         return data
 
-
+#! We need to override the TokenSerializer to return all user data in a single request.
 class UserTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
