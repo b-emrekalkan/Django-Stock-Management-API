@@ -47,6 +47,17 @@ class ProductSerializer(serializers.ModelSerializer):
         #! 👇 "We added it as a read only field because we don't want the stock to be created in the post action.
         read_only_fields = ('stock',)
 
+#? While on the Category page, we want to query the products of that category. For this, we need to write a serializer in a nested structure. 👇
+class CategoryProductsSerializer(serializers.ModelSerializer):
+    #! We used "many=True" because there can be more than one product belonging to the category. 👇
+    products = ProductSerializer(many=True)
+
+    class Meta:
+        model = Category
+        fields = (
+            "name",
+            "products"
+        )
 class FirmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Firm

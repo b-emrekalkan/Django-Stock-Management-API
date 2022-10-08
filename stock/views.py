@@ -13,13 +13,21 @@ from .serializers import(
     BrandSerializer,
     ProductSerializer,
     FirmSerializer,
-    TransactionSerializer
+    TransactionSerializer,
+    CategoryProductsSerializer
 )
 class CategoryView(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    filter_fields = [filters.SearchFilter]
+    filter_fields = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['name']
+    filterset_fields = ["name"]
+
+    def get_serializer_class(self):
+        if self.request.query_params.get('name'):
+            return CategoryProductsSerializer
+        else:
+            return super().get_serializer_class
 
 class BrandView(viewsets.ModelViewSet):
     queryset = Brand.objects.all()

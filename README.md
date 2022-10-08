@@ -593,7 +593,7 @@ class BrandSerializer(serializers.ModelSerializer):
         )
 ```
 
-## 🚩 Go to "urls.py" and add the path
+## 🚩 Go to "stock.urls.py" and add the path 👇
 
 ```python
 router.register('Brand', BrandView)
@@ -640,7 +640,7 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ('stock',)
 ```
 
-## 🚩 Go to "urls.py" and add the path
+## 🚩 Go to "stock.urls.py" and add the path 👇
 
 ```python
 router.register('product', ProductView)
@@ -670,7 +670,7 @@ class FirmSerializer(serializers.ModelSerializer):
         )
 ```
 
-## 🚩 Go to "urls.py" and add the path
+## 🚩 Go to "stock.urls.py" and add the path 👇
 
 ```python
 router.register('firm', FirmView)
@@ -728,13 +728,43 @@ class TransactionSerializer(serializers.ModelSerializer):
         return data
 ```
 
-## 🚩 Go to "urls.py" and add the path
+## 🚩 Go to "stock.urls.py" and add the path 👇
 
 ```python
 router.register('transaction', TransactionView)
 ```
 
+## 🚩 #! While on the Category page, we want to query the products of that category. For this, we need to write a serializer (CategoryProductsSerializer()) in a nested structure. 👇
 
+```python
+class CategoryProductsSerializer(serializers.ModelSerializer):
+    #! We used "many=True" because there can be more than one product belonging to the category. 👇
+    products = ProductSerializer(many=True)
+
+    class Meta:
+        model = Category
+        fields = (
+            "name",
+            "products"
+        )
+```
+
+## 🚩 After that customize the CategoryView() 👇
+
+```python
+class CategoryView(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    filter_fields = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['name']
+    filterset_fields = ["name"]
+
+    def get_serializer_class(self):
+        if self.request.query_params.get('name'):
+            return CategoryProductsSerializer
+        else:
+            return super().get_serializer_class
+```
 
 
 ## 📢 Do not forget to check the endpoints you wrote in [Postman](https://www.postman.com/).
