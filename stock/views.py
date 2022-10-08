@@ -1,5 +1,6 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
+#! Get methods can be overridden to limit public requests. 👆
 from .permissions import CustomModelPermission
 
 from .models import (
@@ -27,7 +28,8 @@ class CategoryView(viewsets.ModelViewSet):
     permission_classes = [CustomModelPermission]
 
     def get_serializer_class(self):
-        if self.request.query_params.get('name'):
+        if self.request.query_params.get('name'): 
+        #! 👆 According to which field it will search. It comes to the url as "?name=". "query_params ?name..&id=" We can write the query_params here as nested.
             return CategoryProductsSerializer
         else:
             return super().get_serializer_class

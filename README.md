@@ -133,7 +133,7 @@ python manage.py runserver
 python manage.py startapp account
 ```
 
-✔ Go to "settings.py" and add 'account' app to "INSTALLED_APPS"
+✔ Go to "settings.py" and add 'account' App to "INSTALLED_APPS"
 
 ## 💻 INSTALL [DJ-REST-AUTH](https://dj-rest-auth.readthedocs.io/en/latest/)
 
@@ -369,15 +369,15 @@ REST_AUTH_SERIALIZERS = {
 python manage.py startapp stock
 ```
 
-✔ Go to "settings.py" and add 'stock' app to "INSTALLED_APPS"
+✔ Go to "settings.py" and add 'stock' App to "INSTALLED_APPS"
 
-## 🚩 Go to "main.urls.py" and add path 👇
+## 🚩 Go to "main/urls.py" and add path 👇
 
 ```python
  path('stock/', include('stock.urls')),
 ```
 
-## 🚩 Go to "models.py" under "stock" app and create models 👇
+## 🚩 Go to "models.py" under "stock" App and create models 👇
 
 ```python
 from itertools import product
@@ -448,7 +448,7 @@ class Transaction(UpdateCreate):
 python manage.py migrate
 ```
 
-## 🚩 Go to admin.py and register the models 👇
+## 🚩 Go to "admin.py" and register the models 👇
 
 ```python
 from django.contrib import admin
@@ -468,7 +468,7 @@ admin.site.register(Firm)
 admin.site.register(Transaction)
 ```
 
-## 🚩 Create  "signals.py" file under "stock" app and add 👇
+## 🚩 Create  "signals.py" file under "stock" App and add 👇
 
 ```python
 from django.db.models.signals import pre_save, post_save
@@ -523,7 +523,7 @@ class CategoryView(viewsets.ModelViewSet):
     search_fields = ['name']
 ```
 
-## 🚩 Create "serializers.py" under "stock" app 👇
+## 🚩 Create "serializers.py" under "stock" App 👇
 
 ```python
 from rest_framework import serializers
@@ -555,7 +555,7 @@ class CategoryView(viewsets.ModelViewSet):
     serializer_class = CategorySerializers
 ```
 
-## 🚩 Create "urls.py" file under "stock" app and add 👇
+## 🚩 Create "urls.py" file under "stock" App and add 👇
 
 ```python
 from django import urls
@@ -573,7 +573,7 @@ urlpatterns = [
 ] + router.urls
 ```
 
-## 🚩 Go to views.py and create BrandView() 👇
+## 🚩 Go to "views.py" and create BrandView() 👇
 
 ```python
 class BrandView(viewsets.ModelViewSet):
@@ -593,7 +593,7 @@ class BrandSerializer(serializers.ModelSerializer):
         )
 ```
 
-## 🚩 Go to "stock.urls.py" and add the path 👇
+## 🚩 Go to "stock/urls.py" and add the path 👇
 
 ```python
 router.register('Brand', BrandView)
@@ -640,7 +640,7 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ('stock',)
 ```
 
-## 🚩 Go to "stock.urls.py" and add the path 👇
+## 🚩 Go to "stock/urls.py" and add the path 👇
 
 ```python
 router.register('product', ProductView)
@@ -670,7 +670,7 @@ class FirmSerializer(serializers.ModelSerializer):
         )
 ```
 
-## 🚩 Go to "stock.urls.py" and add the path 👇
+## 🚩 Go to "stock/urls.py" and add the path 👇
 
 ```python
 router.register('firm', FirmView)
@@ -728,7 +728,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         return data
 ```
 
-## 🚩 Go to "stock.urls.py" and add the path 👇
+## 🚩 Go to "stock/urls.py" and add the path 👇
 
 ```python
 router.register('transaction', TransactionView)
@@ -761,17 +761,19 @@ class CategoryView(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.query_params.get('name'):
+        #! 👆 According to which field it will search. It comes to the url as "?name=". "query_params ?name..&id=" We can write the query_params here as nested.
             return CategoryProductsSerializer
         else:
             return super().get_serializer_class
 ```
 
-# 🚩 <center>ADDING PERMISSIONS </center>
+#  <center> 🛑 ADDING PERMISSIONS 🛑 </center>
 
-## 🚩 Go to "stock.views.py ", import DjangoModelPermissions and customize all views by adding 👇
+## 🚩 Go to "stock/views.py ", import DjangoModelPermissions and customize all views by adding 👇
 
 ```python
 from rest_framework.permissions import DjangoModelPermissions
+#! Get methods can be overridden to limit public requests. 👆
 
     permission_classes = [DjangoModelPermissions]
 ```
@@ -786,7 +788,7 @@ REST_FRAMEWORK = {
 }
 ```
 
-## 🚩 To show groups of users in admin panel; go to account/admin.py and add 👇
+## 🚩 To show groups of users in admin panel; go to "account/admin.py" and add 👇
 
 ```python
 from django.contrib.auth.admin import UserAdmin
@@ -809,7 +811,7 @@ admin.site.unregister(User)
 admin.site.register(User, UserAdminWithGroup)
 ```
 
-## 🚩 Create "permissions.py" file under "stock" app 👇
+## 🚩 Create "permissions.py" file under "stock" App 👇
 
 ```python
 from rest_framework.permissions import DjangoModelPermissions
