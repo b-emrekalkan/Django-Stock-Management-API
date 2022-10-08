@@ -158,11 +158,13 @@ pip freeze > requirements.txt
 ## 🚩 Go to "main/urls.py" and add the path 👇
 
 ```python
-path('users/', include('users.urls'))
+path('account/', include('account.urls'))
 ```
 
-## ✔ Create "urls.py" file under "users" App 👇
-## 🚩 Go to "users/urls.py" and add 👇
+## ✔ Create "urls.py" file under "account" App 👇
+
+## 🚩 Go to "account/urls.py" and add 👇
+
 ```python
 from django.urls import path, include
 
@@ -172,95 +174,128 @@ urlpatterns = [
 ```
 
 ## 💻 Migrate your database
+
 ```bash
 python manage.py migrate
 ```
 
-## ✔ Create "serializers.py" file under "users" App and add 👇
+## ✔ Create "serializers.py" file under "account" App and add 👇
+
 ```python
 from rest_framework import serializers, validators
-# from django.contrib.auth.models import User
-# from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
 from dj_rest_auth.serializers import TokenSerializer
 
-User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
+
     email = serializers.EmailField(
         required=True,
         validators=[validators.UniqueValidator(queryset=User.objects.all())]
     )
+
     password = serializers.CharField(
         write_only=True,
         required=True,
         validators=[validate_password],
         style={"input_type": "password"}
-
     )
 
-    password1 = serializers.CharField(
+    password2 = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[validate_password],
         style={"input_type": "password"}
     )
 
     class Meta:
         model = User
-        fields = (
+        fields = [
             'username',
-            'email',
             'first_name',
             'last_name',
+            'email',
             'password',
-            'password1'
-        )
+            'password2'
+        ]
 
-    def validate(self, data):
-        if data['password'] != data['password1']:
-            raise serializers.ValidationError(
-                {"password": "Password didn't match..... "}
-            )
-        return data
-
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "password2": {"write_only": True}
+        }
     #! To create a user when the user is registered 👇
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        validated_data.pop('password1')
+        password = validated_data.get("password")
+        validated_data.pop("password2")
+
         user = User.objects.create(**validated_data)
-        user.set_password(password)
+        user.password = make_password(password)
         user.save()
         return user
 
+    def validate(self, data):
+        if data["password"] != data["password2"]:
+            raise serializers.ValidationError(
+                {"password": "Password fields didn't match."})
+        return data
+
+
+class UserTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'first_name', 'last_name')
+
+
+class CustomTokenSerializer(TokenSerializer):
+
+    user = UserTokenSerializer(read_only=True)
+
+    class Meta(TokenSerializer.Meta):
+        fields = ('key', 'user')
 ```
-## 🚩 Go to "views.py"
+
+## 🚩 Go to "views.py" and write RegisterVİew() 👇
+
 ```python
-from operator import ge
-from rest_framework import generics
 from django.contrib.auth.models import User
+from rest_framework.generics import CreateAPIView
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework import status
+
 from .serializers import RegisterSerializer
-class RegisterView(generics.CreateAPIView):
+
+
+class RegisterView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        data = serializer.data
+        if Token.objects.filter(user=user).exists():
+            token = Token.objects.get(user=user)
+            data['token'] = token.key
+        else:
+            data['error'] = 'User dont have token. Please login'
+        headers = self.get_success_headers(serializer.data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
 ```
 
 ## 🚩 Go to "urls.py" and add the path 👇
+
 ```python
+from .views import RegisterView
+
 path('register/', RegisterView.as_view()),
 ```
 
-## 🚩 Go to "base.py" and add 👇
-```python
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ]
-}
-```
+## 🚩 Create "signals.py" under "account" App and add 👇
 
-## 🚩 Create "signals.py" under "user" App and add 👇
 ```python
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -268,27 +303,31 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 @receiver(post_save, sender=User)
-def create_token(sender, instance=None, created=False, **kwargs):
+def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
 ```
 
 ## 🚩 Go to "apps.py" and add this under UsersConfig() 👇
+
 ```python
 def ready(self) -> None:
     import users.signals
 ```
 
 ## 🚩 Go to "views.py" and customize RegisterView()👇
+
 ```python
-from rest_framework import generics, status
 from django.contrib.auth.models import User
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework import status
+
 from .serializers import RegisterSerializer
 
 
-class RegisterView(generics.CreateAPIView):
+class RegisterView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
 
@@ -302,12 +341,13 @@ class RegisterView(generics.CreateAPIView):
             token = Token.objects.get(user=user)
             data['token'] = token.key
         else:
-            data['error'] = 'User does not have token. Please login'
+            data['error'] = 'User dont have token. Please login'
         headers = self.get_success_headers(serializer.data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 ```
 
 ## 🚩 Override TokenSerializer() 👇
+
 ```python
 from dj_rest_auth.serializers import TokenSerializer
 

@@ -41,6 +41,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "password2": {"write_only": True}
         }
 
+    #! To create a user when the user is registered 👇
     def create(self, validated_data):
         password = validated_data.get("password")
         validated_data.pop("password2")
